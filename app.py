@@ -15,7 +15,7 @@ import joblib
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 # Load the dataset
-data = pd.read_csv('d:\Tools-Project\smoke_detection_iot.csv')  # Update with the correct path
+data = pd.read_csv('smoke_detection_iot.csv')  # Update with the correct path
 
 # Preprocess the data
 data = data.sample(n=1000)
