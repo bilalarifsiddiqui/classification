@@ -78,36 +78,42 @@ st.sidebar.header("Exploratory Data Analysis")
 
 
 
-
 def screen_one():
-    svm_kernel = st.slider("SVM Kernel (linear or rbf)", 0.0, 1.0, 0.5)
-    knn_neighbors = st.slider("KNN Number of Neighbors", 1, 20, 7)
-    adaboost_n_estimators = st.slider("AdaBoost Number of Estimators", 1, 100, 50)
-    xgboost_learning_rate = st.slider("XGBoost Learning Rate", 0.01, 1.0, 0.01)
-
     # Create models with tuned hyperparameters
     models = {
-        'SVM': SVC(kernel='linear' if svm_kernel < 0.5 else 'rbf'),
-        'KNN': KNeighborsClassifier(n_neighbors=knn_neighbors),
-        'AdaBoost': AdaBoostClassifier(n_estimators=adaboost_n_estimators, learning_rate=1, random_state=0),
-        'XGBoost': xgb.XGBClassifier(random_state=1, learning_rate=xgboost_learning_rate),
+        'SVM': SVC(),
+        'KNN': KNeighborsClassifier(),
+        'AdaBoost': AdaBoostClassifier(),
+        'XGBoost': xgb.XGBClassifier(),
         'Random Forest': rf_model 
     }
 
     st.header("Models")
     selected_model = st.selectbox("Select a Model", list(models.keys()))
 
+    # Display sliders based on the selected model
+    if selected_model == 'SVM':
+        svm_kernel = st.slider("SVM Kernel (linear)", 0.0, 1.0, 0.5)
+        models['SVM'].kernel = 'linear' if svm_kernel < 0.5 else 'rbf'
+    elif selected_model == 'KNN':
+        knn_neighbors = st.slider("KNN Number of Neighbors", 1, 20, 7)
+        models['KNN'].n_neighbors = knn_neighbors
+    elif selected_model == 'AdaBoost':
+        adaboost_n_estimators = st.slider("AdaBoost Number of Estimators", 1, 100, 50)
+        models['AdaBoost'].n_estimators = adaboost_n_estimators
+    elif selected_model == 'XGBoost':
+        xgboost_learning_rate = st.slider("XGBoost Learning Rate", 0.01, 1.0, 0.01)
+        models['XGBoost'].learning_rate = xgboost_learning_rate
+
     if st.button("Train and Evaluate"):
         st.subheader(f"Training and Evaluating {selected_model}...")
         train_and_evaluate_model(models[selected_model], xtrain, ytrain, xtest, ytest, selected_model)
-
-    # Add more content specific to Screen 1 if needed
 
 def screen_two():
     st.header("Visualization")
     # Sidebar for selecting the type of plot
     selected_plot = st.selectbox("Select a Plot Type", ["Correlation Heatmap", "Box Plot",
-                                                                "Histogram - Feature Distribution", "Scatter Plot - Feature vs Target"])
+                                                                "Histogram - Feature Distribution", "Scatter Plot - Feature vs Target", "Pie Chart"])
 
     # Plot based on user selection
     if selected_plot == "Correlation Heatmap":
@@ -148,11 +154,21 @@ def screen_two():
         ax.set_xlabel(selected_scatter_feature)
         ax.set_ylabel("Fire Alarm")
         st.pyplot(fig)
+    elif selected_plot =="Pie Chart":
+        selected_feature = st.selectbox("Select a Feature for Pie Chart", x.columns)
+
+        st.subheader(f"Pie Chart - Distribution of {selected_feature}")
+        fig, ax = plt.subplots()
+        data[selected_feature].value_counts().plot.pie(autopct='%1.1f%%', startangle=90, ax=ax)
+        ax.set_title(f"Distribution of {selected_feature}")
+        
+        # Use st.pyplot() to display the Matplotlib figure in Streamlit
+        st.pyplot(fig)
 
 def screen_three():
     st.header("Prediction using Dynamic Values")
-    rf = joblib.load('./smoke-detection-rf.joblib')
-    sc = joblib.load('./standardscaler.joblib')
+    rf = joblib.load('smoke-detection-rf.joblib')
+    sc = joblib.load('standardscaler.joblib')
 
     temp = st.text_input('Temperature[C]', value=20.0)
     hum = st.text_input('Humidity[%]', value=57.36)
