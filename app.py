@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier 
 import xgboost as xgb
 import joblib
 from sklearn.metrics import accuracy_score, precision_score, recall_score
@@ -19,6 +19,8 @@ data = pd.read_csv('d:\Tools-Project\smoke_detection_iot.csv')  # Update with th
 
 # Preprocess the data
 data = data.sample(n=1000)
+data.drop(['Unnamed: 0','UTC','CNT','PM1.0','PM2.5','NC0.5','NC1.0','NC2.5'], axis=1, inplace=True)
+
 x = data.iloc[:, 0:13]
 y = data.iloc[:, -1]
 data_scaled = RobustScaler()
@@ -27,15 +29,22 @@ xtrain, xtest, ytrain, ytest = train_test_split(x_scaled, y, test_size=0.25, ran
 
 # Function to train and evaluate models
 def train_and_evaluate_model(model, xtrain, ytrain, xtest, ytest, model_name):
+    # Initialize progress bar
+    progress_bar = st.progress(0)
+
+    # Train the model
     model.fit(xtrain, ytrain)
+
+    # Update progress bar
+    progress_bar.progress(50)  # Adjust the progress value based on your training steps
+
+    # Make predictions
     y_pred = model.predict(xtest)
-    
+
+    # Calculate metrics
     accuracy = accuracy_score(ytest, y_pred)
     precision = precision_score(ytest, y_pred)
     recall = recall_score(ytest, y_pred)
-    
-    confusion_matrix = metrics.confusion_matrix(ytest, y_pred)
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=[False, True])
 
     # Display metrics
     st.subheader(f"{model_name} Metrics:")
@@ -43,92 +52,133 @@ def train_and_evaluate_model(model, xtrain, ytrain, xtest, ytest, model_name):
     st.write(f"Precision: {precision:.2%}")
     st.write(f"Recall: {recall:.2%}")
 
-    # Display precision-recall curve
-    st.subheader("Precision-Recall Curve")
-    precision, recall, _ = metrics.precision_recall_curve(ytest, y_pred)
-    plt.plot(recall, precision, marker='.')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    st.pyplot()
+    # Update progress bar
+    progress_bar.progress(100)
 
-    # Display confusion matrix
-    st.subheader("Confusion Matrix")
-    st.pyplot(cm_display.plot())
+    # Create a dataframe for plotting
+    metrics_df = pd.DataFrame({
+        'Metric': ['Accuracy', 'Precision', 'Recall'],
+        'Value': [accuracy, precision, recall]
+    })
+
+    # Plot metrics
+    st.bar_chart(metrics_df.set_index('Metric'), width=400, height=300)
 
 # Streamlit app
-st.title("Machine Learning Model Comparison")
+st.title("Smoke Detection FireAlarm")
 
-# Model comparison
-models = {
-    'SVM': SVC(kernel='linear'),
-    'KNN': KNeighborsClassifier(n_neighbors=7),
-    'AdaBoost': AdaBoostClassifier(n_estimators=50, learning_rate=1, random_state=0),
-    'XGBoost': xgb.XGBClassifier(random_state=1, learning_rate=0.01)
-}
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
-selected_model = st.selectbox("Select a Model", list(models.keys()))
 
-if st.button("Train and Evaluate"):
-    st.subheader(f"Training and Evaluating {selected_model}...")
-    train_and_evaluate_model(models[selected_model], xtrain, ytrain, xtest, ytest, selected_model)
+
 
 # Additional Visualizations
 st.sidebar.header("Exploratory Data Analysis")
 
-# Sidebar for selecting the type of plot
-selected_plot = st.sidebar.selectbox("Select a Plot Type", ["Correlation Heatmap", "Box Plot",
-                                                            "Histogram - Feature Distribution", "Scatter Plot - Feature vs Target"])
-
-# Plot based on user selection
-if selected_plot == "Correlation Heatmap":
-    st.sidebar.subheader("Correlation Heatmap")
-    corr_matrix = data.corr()
-    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f")
-    st.sidebar.pyplot()
-
-elif selected_plot == "Box Plot":
-    selected_feature_box = st.sidebar.selectbox("Select a Feature for Box Plot", x.columns)
-    st.sidebar.subheader(f"Box Plot for {selected_feature_box}")
-    fig, ax = plt.subplots()
-    
-    sns.boxplot(x=data[selected_feature_box], y=data['Fire Alarm'], ax=ax)
-    plt.title(f'Box Plot of {selected_feature_box} against Count')
-    plt.xlabel(selected_feature_box)
-    plt.ylabel('Count')
-    st.sidebar.pyplot(fig)
-
-elif selected_plot == "Histogram - Feature Distribution":
-    st.subheader("Histogram - Feature Distribution")
-    selected_feature = st.sidebar.selectbox("Select a Feature for Histogram", x.columns)
-    sns.hist(data[selected_feature], bins=30)
-    sns.pyplot()
-
-elif selected_plot == "Scatter Plot - Feature vs Target":
-    st.subheader("Scatter Plot - Feature vs Target")
-    selected_scatter_feature = st.selectbox("Select a Feature for Scatter Plot", x.columns)
-    fig, ax = plt.subplots()
-    ax.scatter(x[selected_scatter_feature], y, alpha=0.5)
-    ax.set_xlabel(selected_scatter_feature)
-    ax.set_ylabel("Fire Alarm")
-    st.pyplot(fig)
 
 
 
-rf = joblib.load('./smoke-detection-rf.joblib')
-sc = joblib.load('./standardscaler.joblib')
 
-temp = st.text_input('Temperature[C]', value=20.0)
-hum = st.text_input('Humidity[%]', value=57.36)
-tvoc = st.text_input('TVOC[ppb]', value=0)
-eco2 = st.text_input('eCO2[ppm]', value=400)
-h2 = st.text_input('Raw H2', value=12306)
-eth = st.text_input('Raw Ethanol', value=18520)
-press = st.text_input('Pressure[hPa]', value=939.735)
+def screen_one():
+    svm_kernel = st.slider("SVM Kernel (linear or rbf)", 0.0, 1.0, 0.5)
+    knn_neighbors = st.slider("KNN Number of Neighbors", 1, 20, 7)
+    adaboost_n_estimators = st.slider("AdaBoost Number of Estimators", 1, 100, 50)
+    xgboost_learning_rate = st.slider("XGBoost Learning Rate", 0.01, 1.0, 0.01)
 
-if st.button('Predict'):
+    # Create models with tuned hyperparameters
+    models = {
+        'SVM': SVC(kernel='linear' if svm_kernel < 0.5 else 'rbf'),
+        'KNN': KNeighborsClassifier(n_neighbors=knn_neighbors),
+        'AdaBoost': AdaBoostClassifier(n_estimators=adaboost_n_estimators, learning_rate=1, random_state=0),
+        'XGBoost': xgb.XGBClassifier(random_state=1, learning_rate=xgboost_learning_rate),
+        'Random Forest': rf_model 
+    }
+
+    st.header("Models")
+    selected_model = st.selectbox("Select a Model", list(models.keys()))
+
+    if st.button("Train and Evaluate"):
+        st.subheader(f"Training and Evaluating {selected_model}...")
+        train_and_evaluate_model(models[selected_model], xtrain, ytrain, xtest, ytest, selected_model)
+
+    # Add more content specific to Screen 1 if needed
+
+def screen_two():
+    st.header("Visualization")
+    # Sidebar for selecting the type of plot
+    selected_plot = st.selectbox("Select a Plot Type", ["Correlation Heatmap", "Box Plot",
+                                                                "Histogram - Feature Distribution", "Scatter Plot - Feature vs Target"])
+
+    # Plot based on user selection
+    if selected_plot == "Correlation Heatmap":
+        st.subheader("Correlation Heatmap")
+        corr_matrix = data.corr()
+
+        # Set the size of the figure
+        fig, ax = plt.subplots(figsize=(18, 20))
+
+        sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+
+        # Use st.pyplot() without setting 'deprecation.showPyplotGlobalUse' to False
+        st.pyplot(fig)
+
+    elif selected_plot == "Box Plot":
+        selected_feature_box = st.selectbox("Select a Feature for Box Plot", x.columns)
+        st.subheader(f"Box Plot for {selected_feature_box}")
+        fig, ax = plt.subplots()
+        
+        sns.boxplot(x=data[selected_feature_box], y=data['Fire Alarm'], ax=ax)
+        plt.title(f'Box Plot of {selected_feature_box} against Count')
+        plt.xlabel(selected_feature_box)
+        plt.ylabel('Count')
+        st.pyplot(fig)
+
+    elif selected_plot == "Histogram - Feature Distribution":
+        st.subheader("Histogram - Feature Distribution")
+        fig, ax = plt.subplots()
+        selected_feature = st.selectbox("Select a Feature for Histogram", x.columns)
+        sns.histplot(data[selected_feature], bins=30)
+        st.pyplot(fig)
+
+    elif selected_plot == "Scatter Plot - Feature vs Target":
+        st.subheader("Scatter Plot - Feature vs Target")
+        selected_scatter_feature = st.selectbox("Select a Feature for Scatter Plot", x.columns)
+        fig, ax = plt.subplots()
+        ax.scatter(x[selected_scatter_feature], y, alpha=0.5)
+        ax.set_xlabel(selected_scatter_feature)
+        ax.set_ylabel("Fire Alarm")
+        st.pyplot(fig)
+
+def screen_three():
+    st.header("Prediction using Dynamic Values")
+    rf = joblib.load('./smoke-detection-rf.joblib')
+    sc = joblib.load('./standardscaler.joblib')
+
+    temp = st.text_input('Temperature[C]', value=20.0)
+    hum = st.text_input('Humidity[%]', value=57.36)
+    tvoc = st.text_input('TVOC[ppb]', value=0)
+    eco2 = st.text_input('eCO2[ppm]', value=400)
+    h2 = st.text_input('Raw H2', value=12306)
+    eth = st.text_input('Raw Ethanol', value=18520)
+    press = st.text_input('Pressure[hPa]', value=939.735)
+
+    if st.button('Predict'):
      data_input = np.array([[temp,hum,tvoc,eco2,h2,eth,press]])
      predict = rf.predict(sc.transform(data_input))
      if predict == 0:
           st.write('Prediction Fire Alarm = OFF')
      else:
           st.write('Prediction Fire Alarm = ON')
+
+
+# Create radio buttons for screen selection
+selected_screen = st.sidebar.radio("Select a Screen", ["Models", "Visualization", "Prediction using Dynamic Values"])
+
+# Based on the selected radio button, display the corresponding screen
+if selected_screen == "Models":
+    screen_one()
+elif selected_screen == "Visualization":
+    screen_two()
+elif selected_screen == "Prediction using Dynamic Values":
+    screen_three()
+
