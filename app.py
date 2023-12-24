@@ -17,6 +17,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 # Load the dataset
 data = pd.read_csv('smoke_detection_iot.csv')  # Update with the correct path
 
+# Display the DataFrame loaded from the CSV file
+st.header("DataFrame Loaded from CSV")
+st.dataframe(data)
+
 # Preprocess the data
 data = data.sample(n=1000)
 data.drop(['Unnamed: 0','UTC','CNT','PM1.0','PM2.5','NC0.5','NC1.0','NC2.5'], axis=1, inplace=True)
@@ -167,7 +171,11 @@ def screen_two():
 
 def screen_three():
     st.header("Prediction using Dynamic Values")
-    rf = joblib.load('smoke-detection-rf.joblib')
+    try:
+        rf = joblib.load('smoke-detection-rf.joblib')
+    except Exception as e:
+        print(f"Error loading the model: {e}")
+
     sc = joblib.load('standardscaler.joblib')
 
     temp = st.text_input('Temperature[C]', value=20.0)
