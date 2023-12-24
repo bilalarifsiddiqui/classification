@@ -180,8 +180,8 @@ def screen_two():
 
 def screen_three():
     st.header("Prediction using Dynamic Values")
-    rf = joblib.load('smoke-detection-rf.joblib')
-    sc = joblib.load('standardscaler.joblib')
+    rf = joblib.load('./smoke-detection-rf.joblib')
+    sc = joblib.load('./standardscaler.joblib')
 
     temp = st.text_input('Temperature[C]', value=20.0)
     hum = st.text_input('Humidity[%]', value=57.36)
