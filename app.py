@@ -14,12 +14,24 @@ import xgboost as xgb
 import joblib
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
+
+title_html = """
+    <style>
+        .title {
+            color: #FF0000; /* Red color */
+            font-size: 3em; /* Adjust the font size as needed */
+        }
+    </style>
+    <h1 class="title">Smoke Detection FireAlarm</h1>
+"""
+
+# Render the styled title using markdown
+st.markdown(title_html, unsafe_allow_html=True)
+
+
+
 # Load the dataset
 data = pd.read_csv('smoke_detection_iot.csv')  # Update with the correct path
-
-# Display the DataFrame loaded from the CSV file
-st.header("DataFrame Loaded from CSV")
-st.dataframe(data)
 
 # Preprocess the data
 data = data.sample(n=1000)
@@ -68,19 +80,20 @@ def train_and_evaluate_model(model, xtrain, ytrain, xtest, ytest, model_name):
     # Plot metrics
     st.bar_chart(metrics_df.set_index('Metric'), width=400, height=300)
 
+
+
 # Streamlit app
-st.title("Smoke Detection FireAlarm")
 
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
-
-
-
 # Additional Visualizations
-st.sidebar.header("Exploratory Data Analysis")
+st.sidebar.header("Different Methods for Data")
 
 
-
+def screen_zero():
+    # Display the DataFrame loaded from the CSV file
+    st.header("DataFrame Loaded from CSV")
+    st.dataframe(data)
 
 def screen_one():
     # Create models with tuned hyperparameters
@@ -159,14 +172,10 @@ def screen_two():
         ax.set_ylabel("Fire Alarm")
         st.pyplot(fig)
     elif selected_plot =="Pie Chart":
-        selected_feature = st.selectbox("Select a Feature for Pie Chart", x.columns)
-
-        st.subheader(f"Pie Chart - Distribution of {selected_feature}")
         fig, ax = plt.subplots()
-        data[selected_feature].value_counts().plot.pie(autopct='%1.1f%%', startangle=90, ax=ax)
-        ax.set_title(f"Distribution of {selected_feature}")
-        
-        # Use st.pyplot() to display the Matplotlib figure in Streamlit
+        data['Fire Alarm'].value_counts().plot.pie(autopct='%1.1f%%', startangle=90, ax=ax)
+        ax.set_title("Distribution of Fire Alarm")
+
         st.pyplot(fig)
 
 def screen_three():
@@ -176,7 +185,10 @@ def screen_three():
     except Exception as e:
         print(f"Error loading the model: {e}")
 
-    sc = joblib.load('standardscaler.joblib')
+    try:
+        sc = joblib.load('standardscaler.joblib')
+    except Exception as e:
+        print(f"Error loading the model: {e}")    
 
     temp = st.text_input('Temperature[C]', value=20.0)
     hum = st.text_input('Humidity[%]', value=57.36)
@@ -196,13 +208,31 @@ def screen_three():
 
 
 # Create radio buttons for screen selection
-selected_screen = st.sidebar.radio("Select a Screen", ["Models", "Visualization", "Prediction using Dynamic Values"])
+selected_screen = st.sidebar.radio("Select a Screen", ["Data","Models", "Visualization", "Prediction using Dynamic Values"])
 
 # Based on the selected radio button, display the corresponding screen
-if selected_screen == "Models":
+if selected_screen == "Data":
+    screen_zero()
+elif selected_screen == "Models":
     screen_one()
 elif selected_screen == "Visualization":
     screen_two()
 elif selected_screen == "Prediction using Dynamic Values":
     screen_three()
+
+# footer 
+st.sidebar.markdown("---")
+
+st.sidebar.title("Team Members")
+
+# Team members
+team_members = [
+    {"name": "Bilal Arif"},
+    {"name": "Yasir Arfat"},
+    {"name": "Asif Rasheed"},
+]
+
+# Display team members
+for member in team_members:
+    st.sidebar.write(f"**{member['name']}**")
 
