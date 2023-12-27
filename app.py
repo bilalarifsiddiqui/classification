@@ -31,10 +31,10 @@ st.markdown(title_html, unsafe_allow_html=True)
 
 
 # Load the dataset
-data = pd.read_csv('smoke_detection_iot.csv')  # Update with the correct path
+data = pd.read_csv('smoke_detection_iot.csv')  
 
 # Preprocess the data
-data = data.sample(n=1000)
+data = data.sample(n=1500)
 data.drop(['Unnamed: 0','UTC','CNT','PM1.0','PM2.5','NC0.5','NC1.0','NC2.5'], axis=1, inplace=True)
 
 x = data.iloc[:, 0:13]
