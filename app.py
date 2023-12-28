@@ -35,8 +35,8 @@ data = pd.read_csv('smoke_detection_iot.csv')
 originalData = data
 
 # Preprocess the data
-data = data.sample(n=20000)
-data.drop(['Unnamed: 0','UTC'], axis=1, inplace=True)
+data = data.sample(n=1500)
+data.drop(['Unnamed: 0','UTC','CNT','PM1.0','PM2.5','NC0.5','NC1.0','NC2.5'], axis=1, inplace=True)
 
 x = data.iloc[:, 0:13]
 y = data.iloc[:, -1]
@@ -117,7 +117,7 @@ def screen_one():
         knn_neighbors = st.slider("KNN Number of Neighbors", 1, 20, 7)
         models['KNN'].n_neighbors = knn_neighbors
     elif selected_model == 'AdaBoost':
-        adaboost_n_estimators = st.slider("AdaBoost Number of Estimators", 1, 100, 50)
+        adaboost_n_estimators = st.slider("AdaBoost Number of Estimators", 1, 100, 45)
         models['AdaBoost'].n_estimators = adaboost_n_estimators
     elif selected_model == 'XGBoost':
         xgboost_learning_rate = st.slider("XGBoost Learning Rate", 0.01, 1.0, 0.01)
