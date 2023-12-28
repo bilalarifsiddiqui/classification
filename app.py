@@ -59,9 +59,9 @@ def train_and_evaluate_model(model, xtrain, ytrain, xtest, ytest, model_name):
     y_pred = model.predict(xtest)
 
     # Calculate metrics
-    accuracy = accuracy_score(ytest, y_pred) - 2.1
-    precision = precision_score(ytest, y_pred) -0.9
-    recall = recall_score(ytest, y_pred) - 1.4
+    accuracy = accuracy_score(ytest, y_pred)
+    precision = precision_score(ytest, y_pred) 
+    recall = recall_score(ytest, y_pred)
 
     # Display metrics
     st.subheader(f"{model_name} Metrics:")
