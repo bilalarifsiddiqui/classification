@@ -35,14 +35,14 @@ data = pd.read_csv('smoke_detection_iot.csv')
 originalData = data
 
 # Preprocess the data
-data = data.sample(n=1500)
-data.drop(['Unnamed: 0','UTC','CNT','PM1.0','PM2.5','NC0.5','NC1.0','NC2.5'], axis=1, inplace=True)
+data = data.sample(n=20000)
+data.drop(['Unnamed: 0','UTC'], axis=1, inplace=True)
 
 x = data.iloc[:, 0:13]
 y = data.iloc[:, -1]
 data_scaled = RobustScaler()
 x_scaled = data_scaled.fit_transform(x)
-xtrain, xtest, ytrain, ytest = train_test_split(x_scaled, y, test_size=0.25, random_state=101)
+xtrain, xtest, ytrain, ytest = train_test_split(x_scaled, y, test_size=0.2, random_state=41, shuffle=True)
 
 # Function to train and evaluate models
 def train_and_evaluate_model(model, xtrain, ytrain, xtest, ytest, model_name):
